@@ -88,20 +88,6 @@ public class Client {
 
 
     public Message get(){
-        /*
-            try {
-                InputStream reader = socket.getInputStream();
-                byte[] bytes = new byte[1024];
-                int count = reader.read(bytes);
-                str = new String(bytes, 0, count, "UTF-8");
-                Log.d(TAG,"Rec:"+str);
-                return  str;
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-            */
         try{
             InputStream inputStream=socket.getInputStream();
             DataInputStream dataInputStream=new DataInputStream(inputStream);
@@ -125,15 +111,6 @@ public class Client {
         }
     }
 
-    /*
-    public User getUser(){
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-        }catch (Exception e){
-            return null;
-        }
-    }
-    */
 
 
     public static User JsonToUser(String string){

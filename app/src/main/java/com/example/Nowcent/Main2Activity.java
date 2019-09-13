@@ -49,8 +49,6 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     EditText edt;
     Socket socket;
     Client client;
-//    String txvMsg;
-//    String topMsg;
     Thread recThread;
     Thread sendThread;
     Thread connectThread;
@@ -74,24 +72,14 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     boolean isConnect;
     boolean isExit=false;
     int unreadMsgCount =1;
-    int userNum=-1;
-
     User user;
 
-
-
-
-    final Handler handler=new Handler();
     private static final String TAG = "MainActivity";
 
 
     public void reconnect(String msg,boolean isError){
         if(!isError) {
-//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("M-d H:mm");
-//            Date date = new Date(System.currentTimeMillis());
-//            String timeStr = simpleDateFormat.format(date);
             setList(new ConnectMessage("你",3));
-//            setList("你正在重连", timeStr, "", false,false);
         }
         ifAllowThread=false;
         isConnect=false;
@@ -256,103 +244,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         }
     };
 
-
-
-//    private String handleSendMsg(String str){
-//            return "|CLIENT_MESSAGE|" + str;
-//    }
-
     private void handleRecMsg(Message message){
-//        //Log.d(TAG,"66666666666666666666666666666");
-//        //Log.d(TAG,str);
-//
-//        String[] strArr = str.split("\\|");
-//        if (strArr[1].equals("CLOUD")) {
-//            /*
-//            for (int i = 2; i < strArr.length; i++) {
-//                setGroupTxv(strArr[i] + "");
-//                try {
-//                    Thread.sleep(30);
-//                }catch(Exception e){}
-//                //Log.d(TAG, txvMsg);
-//            }
-//            */
-//
-//            //setGroupTxv("====以上为最近信息====");
-//            //setGroupTxv("["+strArr[2]+"] "+strArr[3]+"\r\n"+strArr[4]);
-//            if(strArr[4].equals("/GPM")){
-//                setList(strArr[2],strArr[3],"",true,true);
-//            }
-//            else {
-//                setList(strArr[2], strArr[3], strArr[4], true, false);
-//            }
-//        }
-//        else if (strArr[1].equals("RECEIVE")){
-//            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("M-d H:mm");
-//            Date date=new Date(System.currentTimeMillis());
-//            String timeStr=simpleDateFormat.format(date);
-//            if(!isFront) {
-//                if(unreadMsgCount ==1){
-//                    startNotification(group, strArr[2]+":"+strArr[3],1,true,true);
-//                }
-//                else{
-//                    startNotification(group, "["+ unreadMsgCount +"条]"+strArr[2]+":"+strArr[3],1,true,true);
-//
-//                }
-//                unreadMsgCount++;
-//            }
-//            else{
-//                unreadMsgCount =1;
-//            }
-//            if(strArr[3].equals("/GPM")){
-//                setList(strArr[2],timeStr,"",true,true);
-//            }
-//            else {
-//                setList(strArr[2], timeStr, strArr[3], true, false);
-//            }
-//        }
-//        /*
-//        else if(strArr[1].equals("SERVER_CONNECT_CHECK")){
-//            //Log.d(TAG,"hb rec");
-//            client.send("");
-//            hbTimer.cancel();
-//            hbTimer.start();
-//        }
-//        */
-//
-//        else if(strArr[1].equals("CONNECT_NOTIFYCATION")){
-//            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("M-d H:mm");
-//            Date date=new Date(System.currentTimeMillis());
-//            String timeStr=simpleDateFormat.format(date);
-//            //setGroupTxv("["+timeStr+"] "+strArr[2]+"已上线！");
-//            setList(strArr[2]+"已加入群聊",timeStr,null,false,false);
-//        }
-//        else if(strArr[1].equals("DISCONNECT_NOTIFYCATION")){
-//            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("M-d H:mm");
-//            Date date=new Date(System.currentTimeMillis());
-//            String timeStr=simpleDateFormat.format(date);
-//            //setGroupTxv("["+timeStr+"] "+strArr[2]+"已下线！");
-//            setList(strArr[2]+"已退出群聊",timeStr,null,false,false);
-//
-//        }
-//        else if(strArr[1].equals("RECONNECT_NOTIFYCATION")){
-//            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("M-d H:mm");
-//            Date date=new Date(System.currentTimeMillis());
-//            String timeStr=simpleDateFormat.format(date);
-//            //setGroupTxv("["+timeStr+"] "+strArr[2]+"已重连！");
-//            setList(strArr[2]+"已重新连接",timeStr,null,false,false);
-//
-//        }
-//        else if(strArr[1].equals("CLOUD_END")){
-//            //setGroupTxv("====以上为最近信息====");
-//        }
-//        else if(strArr[1].equals("ERROR")){
-//            new Thread(){
-//                public void run(){
-//                    reconnect("ERROR",true);
-//                }
-//            }.start();
-//        }
         UserMessage userMessage;
         ConnectMessage connectMessage;
 
@@ -390,40 +282,13 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
         }
         }
-
-//
-//    final Runnable changeMsgTxvUI =new Runnable() {
-//        @Override
-//        public void run() {
-//            //Toast toast=Toast.makeText(getApplicationContext(),txv_Group.getText().toString(),Toast.LENGTH_LONG);
-//            //toast.show();
-//            if (isFirstRec){
-//                txv_Group.setText(txvMsg);
-//                isFirstRec =false;
-//            }
-//            else {
-//                txv_Group.setText(txv_Group.getText() + "\r\n" + txvMsg);
-//            }
-//
-//            int offset= txv_Group.getLineCount()* txv_Group.getLineHeight();
-//            if(offset> txv_Group.getHeight()){
-//                //txv_Group.scrollTo(0,offset-txv_Group.getHeight()+20);
-//                txv_Group.setGravity(Gravity.BOTTOM);
-//            }
-//        }
-//    };
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
         //Unsafe
         //if (android.os.Build.VERSION.SDK_INT > 9) {
             //StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             //StrictMode.setThreadPolicy(policy);
         //}
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
         Intent intent=getIntent();
@@ -460,7 +325,6 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         btn_Send.setOnClickListener(this);
         btn_Exit.setOnClickListener(this);
 
-        //txv_Group.setMovementMethod(ScrollingMovementMethod.getInstance());
 
     }
 
@@ -582,44 +446,6 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
-
-//    public void setList(String user,String time,String msg,boolean isImg,boolean isEmoji){
-//        Map<String,Object> map=new HashMap<String, Object>();
-//        map.put("user",user);
-//        map.put("time",time);
-//        if(isImg) {
-//            if (user.equals("GPM")) {
-//                map.put("img", R.drawable.gpm_png);
-//            } else if (user.equals("orangeboy")) {
-//                map.put("img", R.drawable.admin_png);
-//            } else {
-//                map.put("img", R.drawable.user_png);
-//            }
-//        }
-//        else{
-//            map.put("img",null);
-//        }
-//
-//        if(isEmoji){
-//            map.put("emojiimg",R.drawable.emojis);
-//            Log.d(TAG,"gpmlist");
-//
-//        }
-//        else{
-//            map.put("msg",msg);
-//            Log.d(TAG,"msglist");
-//        }
-//        msgList.add(map);
-//        runOnUiThread(
-//                new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        simpleAdapter.notifyDataSetChanged();
-//                    }
-//                }
-//        );
-//
-//    }
 
     public void setList(UserMessage userMessage){
         Map<String,Object> map=new HashMap<String, Object>();

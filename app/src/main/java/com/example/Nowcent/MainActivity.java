@@ -73,25 +73,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                     //Log.d(TAG,"33333333333333333333333");
                     client.send(new Message(FLAG.CHECK_USER,Client.UserToJson(new User(edt_UserName.getText().toString(),edt_Password.getText().toString(),edt_Group.getText().toString()))));
                     Message checkMessage = client.get();
-                    //Log.d(TAG, "recstr:" + recStr);
-                    /*
-                    if (recStr != null) {
-                        if (handleRecMsg(recStr.split("\\|"))) {
-                            Intent intent = new Intent()
-                            //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                            .setClass(MainActivity.this, Main2Activity.class)
-                            .putExtra("userNickName", validUser)
-                            .putExtra("port", Integer.toString(insidePort))
-                            .putExtra("userNum",Integer.toString(userNum))
-                            .putExtra("group",group);
-                            isAllowThread = false;
-                            socket.close();
-                            startActivity(intent);
-                        } else {
-                            socket.close();
-                        }
-                    }
-                    */
                     if(checkMessage.getFlag()==FLAG.CHECK_USER){
                         user=Client.JsonToUser(checkMessage.getMsg());
                         //set Sp
@@ -152,67 +133,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
         @Override
         public void run() {
             while (isAllowThread) {
-                /*
-                try {
-                    //new socket to connect port 6002
-                    Socket socket = new Socket(getResources().getString(R.string.ip), 6002);
-                    Client client = new Client(socket);
-
-                    client.send(new Message(1,null));
-                    Message message = client.get();
-                    //Version
-                    final String[] strArr;
-                    if (message.getFlag()==2) {
-                        //strArr = versionStr.split("\\|");
-                        if (strArr[1].equals("VERSION_BACK")) {
-                            if (getLocalVersionCode()==Integer.valueOf(strArr[2])) {
-                                break;
-                            } else {
-                                if (getLocalVersionCode()>=Integer.valueOf(strArr[3])) {
-                                    Looper.prepare();
-                                    new AlertDialog.Builder(MainActivity.this)
-                                            .setTitle("发现了新的版本" + strArr[4])
-                                            .setMessage("更新日志：\r\n" + strArr[5])
-                                            .setCancelable(false)
-                                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                }
-                                            })
-                                            .setNegativeButton("下载该版本", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    Uri uri = Uri.parse(strArr[6]);
-                                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                                    startActivity(intent);
-                                                }
-                                            })
-                                            .create().show();
-                                    Looper.loop();
-                                    break;
-                                } else {
-                                    isAllowToUse=false;
-                                    Looper.prepare();
-                                    new AlertDialog.Builder(MainActivity.this)
-                                            .setTitle("发现了新的版本" + strArr[4])
-                                            .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + strArr[5])
-                                            .setCancelable(false)
-                                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    Uri uri = Uri.parse(strArr[6]);
-                                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                                    startActivity(intent);
-                                                }
-                                            })
-                                            .create().show();
-                                    Looper.loop();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    */
                 try{
                     Socket socket = new Socket(getResources().getString(R.string.ip), 6002);
                     Client client = new Client(socket);
@@ -238,7 +158,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                     else{
                         continue;
                     }
-
                     if(localVersionCode>=newVersionCode){
                         break;
                     }
@@ -299,41 +218,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
     };
 
 
-//    public boolean handleRecMsg(String[] strArr){
-//        switch (strArr[0]){
-//            case "LICENSE_CORRECT":
-//                insidePort=Integer.valueOf(strArr[1]);
-//                validUser=strArr[2];
-//                userNum=Integer.valueOf(strArr[3]);
-//                group=edt_Group.getText().toString();
-//                setSp("userName",edt_UserName.getText().toString());
-//                setSp("password",edt_Password.getText().toString());
-//                setSp("group",edt_Group.getText().toString());
-//                return true;
-//            case "LICENSE_WRONG":
-//                showAlert("密码错误","请重新输入用户名和密码");
-//                setSp("password",null);
-//                setSp("group",null);
-//
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        edt_Password.setText("");
-//                        edt_Group.setText("");
-//
-//                    }
-//                });
-//                return false;
-//            case "USING":
-//                showAlert("有人正在登录你的账号","如果这的确是你的账号，请稍后再登录");
-//                return false;
-//
-//            default:
-//                showAlert("服务器返回了一个错误的数据","怪我咯");
-//                return false;
-//
-//        }
-//    }
 
 
     private void showAlert(String title,String msg){
@@ -397,15 +281,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
         }
 
         btn_Login.setOnClickListener(this);
-
-
-        //DEBUG
-        /*
-        Intent intent=new Intent(MainActivity.this,Main2Activity.class);
-        intent.putExtra("userNickName","2333");
-        intent.putExtra("port",Integer.toString(7500));
-        startActivity(intent);
-        */
     }
 
     @Override
