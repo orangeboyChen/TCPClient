@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">即讯</string>
+    <!-- name="ip">139.155.18.163</string-->
+    <!--string name="ip">192.168.2.121</string-->
+    <string name="ip">192.168.137.1</string>
+    <string name="updateLog">*新增：可发送部分表情，快输入"/GPM"试试吧！</string>
+</resources>
