@@ -7,8 +7,8 @@ android {
         applicationId "com.example.Nowcent"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 8
-        versionName "2.1.0 DEBUG"
+        versionCode 10
+        versionName "2.2.2 DEBUG"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
