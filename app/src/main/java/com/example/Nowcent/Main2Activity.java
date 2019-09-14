@@ -12,11 +12,9 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.example.Nowcent.Client.JsonToConnectMessage;
+import static com.example.Nowcent.Client.JsonToList;
 import static com.example.Nowcent.Client.JsonToUser;
 import static com.example.Nowcent.Client.JsonToUserMessage;
 
@@ -55,6 +54,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     SimpleAdapter simpleAdapter;
     ListView listView;
     List<Map<String,Object>> msgList=new ArrayList<Map<String,Object>>();
+    String[] groupUser;
 
     CountDownTimer hbTimer=new CountDownTimer(6000,6000) {
         @Override
@@ -153,11 +153,11 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
 
             Log.d(TAG,"alert");
-            AlertDialog.Builder alert=new AlertDialog.Builder(Main2Activity.this);
-            alert.setTitle("未连接");
-            alert.setMessage("您已退出，请重新登录");
-            alert.setCancelable(false);
-            alert.setPositiveButton("好", new DialogInterface.OnClickListener() {
+            AlertDialog.Builder alert=new AlertDialog.Builder(Main2Activity.this)
+            .setTitle("未连接")
+            .setMessage("您已退出，请重新登录")
+            .setCancelable(false)
+            .setPositiveButton("好", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     Intent intent=new Intent();
@@ -202,7 +202,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                         hbTimer.cancel();
                         hbTimer.start();
                         client.send(new Message(FLAG.HB));
-                        handleRecMsg(message);
+                        handleRecMessage(message);
                     }
                 }catch (Exception e){
                     //e.printStackTrace();
@@ -244,7 +244,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         }
     };
 
-    private void handleRecMsg(Message message){
+    private void handleRecMessage(Message message){
         UserMessage userMessage;
         ConnectMessage connectMessage;
 
@@ -276,6 +276,19 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 break;
             case FLAG.HB:
                 client.send(new Message(FLAG.HB));
+                break;
+            case FLAG.USERLIST:
+                //Handle
+                String str=message.getMsg();
+                String str2=str.replaceAll("[\\[\\]\"]","");
+                Log.d(TAG,str2);
+                groupUser=str2.split(",");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        txv_Group.setText(user.getGroup()+"("+groupUser.length+"人在线）");
+                    }
+                });
                 break;
 
 
@@ -324,6 +337,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
         btn_Send.setOnClickListener(this);
         btn_Exit.setOnClickListener(this);
+        txv_Group.setOnClickListener(this);
 
 
     }
@@ -335,6 +349,15 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
                 if(edt.getText().toString().equals("1")){
                     disConnect();
+                }
+                else if(edt.getText().toString().equals("2")){
+                    new Thread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    client.send(new Message(FLAG.USERLIST));
+                                }
+                            }).start();
                 }
                 else {
                     sendThread = new Thread(sendMsgRunnable);
@@ -359,6 +382,26 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 simpleAdapter=null;
                 listView=null;
                 finish();
+                break;
+            case R.id.txv_group:
+                StringBuilder stringBuilder=new StringBuilder();
+                for(int i=0;i<groupUser.length-1;i++){
+                    stringBuilder.append(groupUser[i]+"\n\r");
+                }
+                stringBuilder.append(groupUser[groupUser.length-1]+"\n\r");
+                String str=stringBuilder.toString();
+
+                AlertDialog.Builder alert=new AlertDialog.Builder(Main2Activity.this)
+//                        .setTitle("在线用户")
+                        .setMessage(str)
+                        .setCancelable(true)
+                        .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                            }
+                        });
+                alert.show();
+                break;
         }
     }
 
@@ -396,21 +439,20 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         Notification notification;
         if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.O){
             Log.d(TAG,"Notification8888888888888888888888");
-            NotificationChannel notificationChannel;
-            notificationChannel = new NotificationChannel("1", "消息提醒", NotificationManager.IMPORTANCE_HIGH);
+            NotificationChannel notificationChannel = new NotificationChannel("1", "消息提醒", NotificationManager.IMPORTANCE_HIGH);
             notificationChannel.setShowBadge(true);
             notificationManager.createNotificationChannel(notificationChannel);
-            Notification.Builder builder=new Notification.Builder(this);
-            builder.setContentTitle(title);
-            builder.setContentText(msg);
-            builder.setWhen(System.currentTimeMillis());
-            builder.setShowWhen(true);
-            builder.setSmallIcon(R.mipmap.iclauncher);
-            builder.setContentIntent(pendingIntent);
-            builder.setNumber(unreadMsgCount);
-            builder.setAutoCancel(true);
-            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
-            builder.setChannelId("1");
+            Notification.Builder builder=new Notification.Builder(this)
+            .setContentTitle(title)
+            .setContentText(msg)
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
+            .setSmallIcon(R.mipmap.iclauncher)
+            .setContentIntent(pendingIntent)
+            .setNumber(unreadMsgCount)
+            .setAutoCancel(true)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setChannelId("1");
             notification=builder.build();
             //if(!cancelable){
             //    notification.flags|=Notification.FLAG_ONGOING_EVENT;
@@ -419,16 +461,16 @@ public class Main2Activity extends Activity implements View.OnClickListener {
             return;
         }
         else{
-            NotificationCompat.Builder builder=new NotificationCompat.Builder(Main2Activity.this.getApplicationContext());
-            builder.setSmallIcon(R.mipmap.ic_launcher);
-            builder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
-            builder.setDefaults(Notification.DEFAULT_ALL);
-            builder.setTicker(title+"："+msg);
-            builder.setContentTitle(title);
-            builder.setContentText(msg);
-            builder.setAutoCancel(true);
-            builder.setPriority(Notification.PRIORITY_HIGH);
-            builder.setContentIntent(pendingIntent);
+            NotificationCompat.Builder builder=new NotificationCompat.Builder(Main2Activity.this.getApplicationContext())
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            .setDefaults(Notification.DEFAULT_ALL)
+            .setTicker(title+"："+msg)
+            .setContentTitle(title)
+            .setContentText(msg)
+            .setAutoCancel(true)
+            .setPriority(Notification.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent);
             notification=builder.build();
             if(!cancelable){
                 notification.flags|=Notification.FLAG_ONGOING_EVENT;

@@ -134,4 +134,8 @@ public class Client {
         return new Gson().fromJson(string,ConnectMessage.class);
     }
 
+    public static Object JsonToList(String string){
+        return new Gson().fromJson(string,Object.class);
+    }
+
 }

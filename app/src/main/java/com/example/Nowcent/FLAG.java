@@ -14,6 +14,6 @@ public class FLAG {
     public static final int CLOUD=11;
     public static final int USER_MESSAGE=12;
     public static final int CONNECT_INFO=13;
-    public static final int USING=14;
+    public static final int USERLIST=14;
 
 }
