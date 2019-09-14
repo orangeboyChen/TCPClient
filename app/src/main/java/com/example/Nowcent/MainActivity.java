@@ -141,33 +141,29 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                     final String updateURL;
                     int newVersionCode;
                     int minVersionCode;
-                    String versionName;
+                    final String versionName;
                     int localVersionCode= getLocalVersionCode();
 
 
                     client.send(new Message(FLAG.VERSION));
                     message=client.get();
+                    final Message_Version message_version;
                     if(message.getFlag()==FLAG.VERSION){
-                        String[] strings=message.getMsg().split("\\|");
-                        updateLog = strings[0];
-                        updateURL = strings[1];
-                        newVersionCode = Integer.valueOf(strings[2]);
-                        minVersionCode = Integer.valueOf(strings[3]);
-                        versionName = strings[4];
+                        message_version=Client.JsonToVersionMessage(message.getMsg());
                     }
                     else{
                         continue;
                     }
-                    if(localVersionCode>=newVersionCode){
+                    if(localVersionCode>=message_version.getNewVersionCode()){
                         break;
                     }
                     else{
-                        if(localVersionCode>=minVersionCode){
+                        if(localVersionCode>=message_version.getMinVersionCode()){
                             Looper.prepare();
                             //Show dialog
                             new AlertDialog.Builder(MainActivity.this)
-                                    .setTitle("发现了新的版本" + versionName)
-                                    .setMessage("更新日志：\r\n" + updateLog)
+                                    .setTitle("发现了新的版本" + message_version.getVersionName())
+                                    .setMessage("更新日志：\r\n" + message_version.getUpdateLog())
                                     .setCancelable(false)
                                     .setPositiveButton("好", new DialogInterface.OnClickListener() {
                                         @Override
@@ -177,7 +173,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                                     .setNegativeButton("下载该版本", new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
-                                            Uri uri = Uri.parse(updateURL);
+                                            Uri uri = Uri.parse(message_version.getUpdateURL());
                                             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                                             startActivity(intent);
                                         }
@@ -190,13 +186,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                             isAllowToUse=false;
                             Looper.prepare();
                             new AlertDialog.Builder(MainActivity.this)
-                                    .setTitle("发现了新的版本" + versionName)
-                                    .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + updateLog)
+                                    .setTitle("发现了新的版本" + message_version.getVersionName())
+                                    .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + message_version.getUpdateLog())
                                     .setCancelable(false)
                                     .setPositiveButton("好", new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
-                                            Uri uri = Uri.parse(updateURL);
+                                            Uri uri = Uri.parse(message_version.getUpdateURL());
                                             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                                             startActivity(intent);
                                         }

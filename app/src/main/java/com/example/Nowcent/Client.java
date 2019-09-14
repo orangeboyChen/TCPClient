@@ -130,6 +130,10 @@ public class Client {
         return new Gson().fromJson(string, Message_Connect.class);
     }
 
+    public static Message_Version JsonToVersionMessage(String string){
+        return new Gson().fromJson(string, Message_Version.class);
+    }
+
     public static Object JsonToList(String string){
         return new Gson().fromJson(string,Object.class);
     }
