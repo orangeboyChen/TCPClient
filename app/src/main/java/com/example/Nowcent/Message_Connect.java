@@ -1,9 +1,9 @@
 package com.example.Nowcent;
 
-public class ConnectMessage {
+public class Message_Connect {
     private String name;
     private int type;
-    public ConnectMessage(String name,int type){
+    public Message_Connect(String name, int type){
         this.name=name;
         this.type=type;
     }

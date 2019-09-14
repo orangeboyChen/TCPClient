@@ -48,7 +48,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                 new Thread(checkVersion).start();
             } else {
                 try {
-//                    setBtnEnabled(false);//set button
+                    setBtnEnabled(false);//set button
                     Looper.prepare();
 
                     //set socket

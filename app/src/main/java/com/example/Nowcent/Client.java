@@ -1,20 +1,13 @@
 package com.example.Nowcent;
 import android.util.Log;
 
-import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+
 import com.google.gson.Gson;
 
 
@@ -99,6 +92,9 @@ public class Client {
             Log.d(TAG,"get Flag:"+flag);
             int length=dataInputStream.readInt();
             Log.d(TAG,"get Length:"+length);
+            if(length>10000){
+                return null;
+            }
             byte[] data=new byte[length-4-4];
             dataInputStream.readFully(data);
 //            inputStream.close();
@@ -130,8 +126,8 @@ public class Client {
         return new Gson().toJson(userMessage);
     }
 
-    public static ConnectMessage JsonToConnectMessage(String string){
-        return new Gson().fromJson(string,ConnectMessage.class);
+    public static Message_Connect JsonToConnectMessage(String string){
+        return new Gson().fromJson(string, Message_Connect.class);
     }
 
     public static Object JsonToList(String string){

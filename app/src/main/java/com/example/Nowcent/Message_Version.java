@@ -1,6 +1,6 @@
 package com.example.Nowcent;
 
-public class VersionMessage {
+public class Message_Version {
     private String updateLog;
     private String updateURL;
     private int newVersionCode;

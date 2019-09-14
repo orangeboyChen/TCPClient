@@ -35,12 +35,12 @@ import java.util.List;
 import java.util.Map;
 
 import static com.example.Nowcent.Client.JsonToConnectMessage;
-import static com.example.Nowcent.Client.JsonToList;
 import static com.example.Nowcent.Client.JsonToUser;
 import static com.example.Nowcent.Client.JsonToUserMessage;
 
 public class Main2Activity extends Activity implements View.OnClickListener {
     int port;
+    String group;
     Button btn_Send;
     Button btn_Exit;
     TextView txv_Name;
@@ -62,14 +62,14 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         }
         @Override
         public void onFinish() {
-            disConnect();
+            reConnect();
             hbTimer.cancel();
         }
     };
 
-    boolean ifAllowThread =true;
-    boolean isFront;
-    boolean isConnect;
+    boolean isAllowThread =true;
+    boolean isFront=true;
+    boolean isConnect=true;
     boolean isExit=false;
     int unreadMsgCount =1;
     User user;
@@ -79,18 +79,25 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
     public void reconnect(String msg,boolean isError){
         if(!isError) {
-            setList(new ConnectMessage("你",3));
+            setList(new Message_Connect("你",3));
         }
-        ifAllowThread=false;
+        groupUser=new String[1];
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txv_Group.setText(user.getGroup()+"(你当前离线)");
+            }
+        });
+        isAllowThread =false;
         isConnect=false;
-        for(int i=0;i<=3;i++) {
+        for(int i=0;i<=2;i++) {
             try {
                 SocketAddress socketAddress = new InetSocketAddress(getResources().getString(R.string.ip), 6000);
                 socket = new Socket();
                 socket.connect(socketAddress, 300);
 
                 client = new Client(socket);
-                client.send(new Message(FLAG.RECONNECT,client.UserToJson(new User(user.getName(),user.getPassword(),user.getGroup()))));
+                client.send(new Message(FLAG.RECONNECT,Client.UserToJson(new User(user.getName(),user.getPassword(),group))));
                 Message message=client.get();
                 if(message.getFlag()==FLAG.RECONNECT) {
                     user = JsonToUser(message.getMsg());
@@ -98,80 +105,44 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                     socket = new Socket(getResources().getString(R.string.ip), port);
                     client = new Client(socket);
                     isConnect=true;
-                    ifAllowThread=true;
+                    isAllowThread =true;
                     new Thread(recThread).start();
                     hbTimer.cancel();
                     hbTimer.start();
                     break;
                 }
                 Thread.sleep(1000);
-
-
-
-
-//                Log.d(TAG,str);
-//                if (str.equals("ALLOW_TO_RECONNECT")) {
-//                    client.send("RECONNECT_LICENSE_CHECK|" + userNum+"|"+group);
-//                    String preStr = client.get();
-//                    Log.d(TAG,preStr);
-//                    if (preStr != null) {
-//                        String[] strArr = preStr.split("\\|");
-//                        if (strArr[0].equals("RECONNECT_SUCCESS")) {
-//                            port = Integer.valueOf(strArr[1]);
-//                            Log.d(TAG,Integer.toString(port));
-//                            socket = new Socket(getResources().getString(R.string.ip), port);
-//                            client = new Client(socket);
-//                            setTxv_Name(userNickName);
-//                            ifConnect=true;
-//                            ifAllowThread=true;
-//                            new Thread(recThread).start();
-//                            hbTimer.cancel();
-//                            hbTimer.start();
-//                            break;
-//                        }
-//                    }
-//                }
-//                Thread.sleep(1000);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Log.d(TAG,"error socket");
                 e.printStackTrace();
             }
         }
 
-
         if(!isConnect){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    txv_Name.setText(user.getNickName());
-                }
-            });
-            if(!isFront){
-                startNotification("未连接","请重新登录",1,true,true);
+            if(isFront){
+                Looper.prepare();
+                AlertDialog.Builder alert = new AlertDialog.Builder(Main2Activity.this)
+                        .setTitle("未连接")
+                        .setMessage("您已退出，请重新登录")
+                        .setCancelable(false)
+                        .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                Intent intent = new Intent();
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intent.setClass(Main2Activity.this, MainActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        });
+                alert.show();
+                Looper.loop();
             }
-            Looper.prepare();
-
-
-            Log.d(TAG,"alert");
-            AlertDialog.Builder alert=new AlertDialog.Builder(Main2Activity.this)
-            .setTitle("未连接")
-            .setMessage("您已退出，请重新登录")
-            .setCancelable(false)
-            .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    Intent intent=new Intent();
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
-                    intent.setClass(Main2Activity.this,MainActivity.class);
-                    startActivity(intent);
-                    finish();
-                }
-            });
-            alert.show();
-            Looper.loop();
+            else{
+                startNotification("未连接", "请重新登录", 1, true, true);
+            }
         }
-
-
     }
 
     Runnable reconnectRunnable=new Runnable() {
@@ -195,7 +166,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     Runnable receiveMsgRunnable=new Runnable() {
         @Override
         public void run() {
-            while (ifAllowThread) {
+            while (isAllowThread) {
                 try{
                     Message message = client.get();
                     if(message!=null) {
@@ -204,7 +175,8 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                         client.send(new Message(FLAG.HB));
                         handleRecMessage(message);
                     }
-                }catch (Exception e){
+                }
+                catch (Exception e){
                     //e.printStackTrace();
                 }
             }
@@ -226,10 +198,10 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                     do{
                         str = edt.getText().toString();
                     }while(str==null);
-                    Log.d(TAG, "str:" + str);
+//                    Log.d(TAG, "str:" + str);
 
                     UserMessage userMessage=new UserMessage(user.getName(),time,str,user.getGroup());
-                    Log.d(TAG,Client.UserMessageToJson(userMessage));
+//                    Log.d(TAG,Client.UserMessageToJson(userMessage));
                     client.send(new Message(FLAG.USER_MESSAGE,Client.UserMessageToJson(userMessage)));
                     runOnUiThread(new Runnable() {
                         @Override
@@ -246,7 +218,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
     private void handleRecMessage(Message message){
         UserMessage userMessage;
-        ConnectMessage connectMessage;
+        Message_Connect messageConnect;
 
         if(message!=null)
         switch(message.getFlag()){
@@ -271,8 +243,8 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 setList(userMessage);
                 break;
             case FLAG.CONNECT_INFO:
-                connectMessage=JsonToConnectMessage(message.getMsg());
-                setList(connectMessage);
+                messageConnect =JsonToConnectMessage(message.getMsg());
+                setList(messageConnect);
                 break;
             case FLAG.HB:
                 client.send(new Message(FLAG.HB));
@@ -286,7 +258,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        txv_Group.setText(user.getGroup()+"("+groupUser.length+"人在线）");
+                        txv_Group.setText(user.getGroup()+"("+groupUser.length+")");
                     }
                 });
                 break;
@@ -308,6 +280,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         isFront=true;
         //Get user
         user=Client.JsonToUser(intent.getStringExtra("user"));
+        group=user.getGroup();
         //Instance
         btn_Exit=(Button)this.findViewById(R.id.btn_exit);
         btn_Send =(Button)this.findViewById(R.id.btn_send);
@@ -346,26 +319,26 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     public void onClick(View view){
         switch (view.getId()){
             case R.id.btn_send:
-
-                if(edt.getText().toString().equals("1")){
-                    disConnect();
-                }
-                else if(edt.getText().toString().equals("2")){
-                    new Thread(
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    client.send(new Message(FLAG.USERLIST));
-                                }
-                            }).start();
-                }
-                else {
+//
+//                if(edt.getText().toString().equals("1")){
+//                    reConnect();
+//                }
+//                else if(edt.getText().toString().equals("2")){
+//                    new Thread(
+//                            new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    client.send(new Message(FLAG.USERLIST));
+//                                }
+//                            }).start();
+//                }
+//                else {
                     sendThread = new Thread(sendMsgRunnable);
                     sendThread.start();
-                }
+//                }
                 break;
             case R.id.btn_exit:
-                ifAllowThread=false;
+                isAllowThread =false;
                 isExit=true;
                 new Thread(){
                     public void run(){
@@ -420,12 +393,16 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         NotificationManager notificationManager=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
         unreadMsgCount =1;
+        if(!isConnect){
+            reConnect();
+        }
+
         Log.d(TAG,"START");
     }
 
-    private void disConnect(){
+    private void reConnect(){
         if(!isExit) {
-            Log.d(TAG, "disConnect()");
+            Log.d(TAG, "reConnect()");
             new Thread(reconnectRunnable).start();
         }
     }
@@ -513,18 +490,18 @@ public class Main2Activity extends Activity implements View.OnClickListener {
 
     }
 
-    private void setList(ConnectMessage connectMessage){
+    private void setList(Message_Connect messageConnect){
         Map<String,Object> map=new HashMap<String, Object>();
         map.put("user","系统");
-        switch(connectMessage.getType()){
+        switch(messageConnect.getType()){
             case 1:
-                map.put("time", connectMessage.getName()+"已加入");
+                map.put("time", messageConnect.getName()+"已加入");
                 break;
             case 2:
-                map.put("time", connectMessage.getName()+"已退出");
+                map.put("time", messageConnect.getName()+"已退出");
                 break;
             case 3:
-                map.put("time", connectMessage.getName()+"正在重连");
+                map.put("time", messageConnect.getName()+"正在重连");
                 break;
         }
         msgList.add(map);
