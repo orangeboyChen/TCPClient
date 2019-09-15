@@ -15,5 +15,10 @@ public class FLAG {
     public static final int USER_MESSAGE=12;
     public static final int CONNECT_INFO=13;
     public static final int USERLIST=14;
+    public static final int USER_IMG=15;
+    public static final int CLOUD_IMG=16;
+
+    public static final int JOIN=1;
+    public static final int RE=3;
 
 }

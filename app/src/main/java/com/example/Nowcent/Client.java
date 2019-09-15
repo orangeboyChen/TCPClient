@@ -134,8 +134,11 @@ public class Client {
         return new Gson().fromJson(string, Message_Version.class);
     }
 
-    public static Object JsonToList(String string){
-        return new Gson().fromJson(string,Object.class);
+    public static UserImg JsonToUserImg(String string){
+        return new Gson().fromJson(string, UserImg.class);
     }
 
+    public static String UserImgToJson(UserImg userImg){
+        return new Gson().toJson(userImg);
+    }
 }

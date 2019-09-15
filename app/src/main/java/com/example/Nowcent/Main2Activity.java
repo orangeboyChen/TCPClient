@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -36,7 +38,9 @@ import java.util.Map;
 
 import static com.example.Nowcent.Client.JsonToConnectMessage;
 import static com.example.Nowcent.Client.JsonToUser;
+import static com.example.Nowcent.Client.JsonToUserImg;
 import static com.example.Nowcent.Client.JsonToUserMessage;
+import static com.example.Nowcent.Client.UserImgToJson;
 
 public class Main2Activity extends Activity implements View.OnClickListener {
     int port;
@@ -51,10 +55,12 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     Thread recThread;
     Thread sendThread;
     Thread connectThread;
-    SimpleAdapter simpleAdapter;
+//    SimpleAdapter simpleAdapter;
     ListView listView;
-    List<Map<String,Object>> msgList=new ArrayList<Map<String,Object>>();
+//    List<Map<String,Object>> msgList=new ArrayList<Map<String,Object>>();
     String[] groupUser;
+    Adapter adapter;
+    ArrayList<ListItem> arrayList;
 
     CountDownTimer hbTimer=new CountDownTimer(6000,6000) {
         @Override
@@ -72,6 +78,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     boolean isConnect=true;
     boolean isExit=false;
     int unreadMsgCount =1;
+    int defaultValue=0;
     User user;
 
     private static final String TAG = "MainActivity";
@@ -219,6 +226,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     private void handleRecMessage(Message message){
         UserMessage userMessage;
         Message_Connect messageConnect;
+        UserImg userImg;
 
         if(message!=null)
         switch(message.getFlag()){
@@ -254,7 +262,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 String str=message.getMsg();
                 String str2=str.replaceAll("[\\[\\]\"]","");
                 Log.d(TAG,str2);
-                groupUser=str2.split(",");
+                groupUser=str2.split(", ");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -262,11 +270,28 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                     }
                 });
                 break;
-
-
-
+            case FLAG.USER_IMG:
+                userImg=JsonToUserImg(message.getMsg());
+                if(!isFront) {
+                    if(unreadMsgCount ==1){
+                        startNotification(userImg.getGroup(), userImg.getNickName()+":[动画表情]",1,true,true);
+                    }
+                    else{
+                        startNotification(userImg.getGroup(), "["+ unreadMsgCount +"条]"+userImg.getNickName()+":[动画表情]",1,true,true);
+                    }
+                    unreadMsgCount++;
+                }
+                else{
+                    unreadMsgCount =1;
+                }
+                setList(userImg);
+                break;
+            case FLAG.CLOUD_IMG:
+                userImg=JsonToUserImg(message.getMsg());
+                setList(userImg);
+                break;
         }
-        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //Unsafe
@@ -303,15 +328,73 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         connectThread.start();
         hbTimer.start();
 
-        simpleAdapter=new SimpleAdapter(Main2Activity.this,msgList,R.layout.listview,
-                new String[]{"user","time","msg","img","emojiimg"},
-                new int[]{R.id.txv_user,R.id.txv_time,R.id.txv_msg,R.id.img_user,R.id.img_emoji});
-        listView.setAdapter(simpleAdapter);
+
+
+        arrayList=new ArrayList<ListItem>();
+        adapter=new Adapter(Main2Activity.this,arrayList);
+//        simpleAdapter=new SimpleAdapter(Main2Activity.this,msgList,R.layout.listview,
+//                new String[]{"user","time","msg","img","emojiimg"},
+//                new int[]{R.id.txv_user,R.id.txv_time,R.id.txv_msg,R.id.img_user,0});
+
+        listView.setAdapter(adapter);
 
         btn_Send.setOnClickListener(this);
         btn_Exit.setOnClickListener(this);
         txv_Group.setOnClickListener(this);
 
+        edt.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(edt.getText().toString().equals("/")){
+                    final String[] emojis={"GPM","Happy"};
+
+                    AlertDialog.Builder builder=new AlertDialog.Builder(Main2Activity.this)
+                            .setTitle("发送表情")
+                            .setItems(emojis,new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    defaultValue=i;
+                                    Log.d(TAG,Integer.toString(i));
+                                    switch (defaultValue){
+                                        case 0:
+                                            new Thread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    client.send(new Message(FLAG.USER_IMG,UserImgToJson(new UserImg(user.getName(),R.drawable.gpm,user.getGroup()))));
+                                                }
+                                            }).start();
+                                            break;
+                                        case 1:
+                                            new Thread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    client.send(new Message(FLAG.USER_IMG,UserImgToJson(new UserImg(user.getName(),R.drawable.happy,user.getGroup()))));
+                                                }
+                                            }).start();
+                                    }
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            edt.setText("");
+                                        }
+                                    });
+                                }
+                            });
+                    builder.show();
+                    Looper.loop();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
 
     }
 
@@ -352,7 +435,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.setClass(Main2Activity.this,MainActivity.class);
                 startActivity(intent);
-                simpleAdapter=null;
+                adapter=null;
                 listView=null;
                 finish();
                 break;
@@ -467,23 +550,24 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     }
 
     public void setList(UserMessage userMessage){
-        Map<String,Object> map=new HashMap<String, Object>();
-        map.put("user",userMessage.getUser());
-        map.put("time",userMessage.getTime());
-        map.put("msg",userMessage.getMsg());
-        if (userMessage.getUser().equals("GPM")) {
-            map.put("img", R.drawable.gpm_png);
-        } else if (userMessage.getUser().equals("orangeboy")) {
-            map.put("img", R.drawable.admin_png);
-        } else {
-            map.put("img", R.drawable.user_png);
-        }
-        msgList.add(map);
+//        Map<String,Object> map=new HashMap<String, Object>();
+//        map.put("user",userMessage.getUser());
+//        map.put("time",userMessage.getTime());
+//        map.put("msg",userMessage.getMsg());
+//        if (userMessage.getUser().equals("GPM")) {
+//            map.put("img", R.drawable.gpm_png);
+//        } else if (userMessage.getUser().equals("orangeboy")) {
+//            map.put("img", R.drawable.admin_png);
+//        } else {
+//            map.put("img", R.drawable.user_png);
+//        }
+//        msgList.add(map);
+        arrayList.add(new ListItem(userMessage));
         runOnUiThread(
                 new Runnable() {
                     @Override
                     public void run() {
-                        simpleAdapter.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();
                     }
                 }
         );
@@ -491,30 +575,40 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     }
 
     private void setList(Message_Connect messageConnect){
-        Map<String,Object> map=new HashMap<String, Object>();
-        map.put("user","系统");
-        switch(messageConnect.getType()){
-            case 1:
-                map.put("time", messageConnect.getName()+"已加入");
-                break;
-            case 2:
-                map.put("time", messageConnect.getName()+"已退出");
-                break;
-            case 3:
-                map.put("time", messageConnect.getName()+"正在重连");
-                break;
-        }
-        msgList.add(map);
+//        Map<String,Object> map=new HashMap<String, Object>();
+//        map.put("user","系统");
+//        switch(messageConnect.getType()){
+//            case 1:
+//                map.put("time", messageConnect.getName()+"已加入");
+//                break;
+//            case 2:
+//                map.put("time", messageConnect.getName()+"已退出");
+//                break;
+//            case 3:
+//                map.put("time", messageConnect.getName()+"正在重连");
+//                break;
+//        }
+//        msgList.add(map);
+
+        arrayList.add(new ListItem(messageConnect));
         runOnUiThread(
                 new Runnable() {
                     @Override
                     public void run() {
-                        simpleAdapter.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();
                     }
                 }
         );
-
     }
 
+    public void setList(UserImg userImg){
+        arrayList.add(new ListItem(userImg));
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
 
 }
