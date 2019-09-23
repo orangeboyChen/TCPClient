@@ -1,4 +1,4 @@
-package com.example.Nowcent;
+package com.orangeboy.Nowcent;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -6,13 +6,16 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Looper;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -21,7 +24,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
@@ -32,35 +34,38 @@ import java.net.SocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import static com.example.Nowcent.Client.JsonToConnectMessage;
-import static com.example.Nowcent.Client.JsonToUser;
-import static com.example.Nowcent.Client.JsonToUserImg;
-import static com.example.Nowcent.Client.JsonToUserMessage;
-import static com.example.Nowcent.Client.UserImgToJson;
+import static com.orangeboy.Nowcent.Client.JsonToConnectMessage;
+import static com.orangeboy.Nowcent.Client.JsonToListStrs;
+import static com.orangeboy.Nowcent.Client.JsonToListUserMessage;
+import static com.orangeboy.Nowcent.Client.JsonToUser;
+import static com.orangeboy.Nowcent.Client.JsonToUserMessage;
+import static com.orangeboy.Nowcent.Client.UserMessageToJson;
 
-public class Main2Activity extends Activity implements View.OnClickListener {
-    int port;
-    String group;
-    Button btn_Send;
-    Button btn_Exit;
-    TextView txv_Name;
-    TextView txv_Group;
-    EditText edt;
-    Socket socket;
-    Client client;
-    Thread recThread;
-    Thread sendThread;
-    Thread connectThread;
-//    SimpleAdapter simpleAdapter;
-    ListView listView;
-//    List<Map<String,Object>> msgList=new ArrayList<Map<String,Object>>();
-    String[] groupUser;
-    Adapter adapter;
-    ArrayList<ListItem> arrayList;
+public class ChatActivity extends Activity implements View.OnClickListener {
+    private int port;
+    private int latestMessageId=0;
+    private String group;
+    private Button btn_Send;
+    private Button btn_Exit;
+    private TextView txv_Name;
+    private TextView txv_Group;
+    private EditText edt;
+    private Socket socket;
+    private Client client;
+    private Thread recThread;
+    private Thread sendThread;
+    private Thread connectThread;
+    private ListView listView;
+    private List<String> groupUser;
+    private Adapter adapter;
+    private ArrayList<ListItem> arrayList;
+    private SQLiteDatabase sqLiteDatabase;
+    private ProgressDialog progressDialog;
+    private final int LOCAL=1;
+    private final int CLOUD=2;
 
     CountDownTimer hbTimer=new CountDownTimer(6000,6000) {
         @Override
@@ -68,7 +73,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         }
         @Override
         public void onFinish() {
-            reConnect();
+            reconnect();
             hbTimer.cancel();
         }
     };
@@ -81,14 +86,20 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     int defaultValue=0;
     User user;
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "LoginActivity";
 
 
     public void reconnect(String msg,boolean isError){
-        if(!isError) {
+        groupUser=null;
+
+
+//        if(!isError) {
+//            setList(new Message_Connect("你",3));
+//        }
+        if(isFront){
             setList(new Message_Connect("你",3));
         }
-        groupUser=new String[1];
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -99,23 +110,64 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         isConnect=false;
         for(int i=0;i<=2;i++) {
             try {
+                //Connect
                 SocketAddress socketAddress = new InetSocketAddress(getResources().getString(R.string.ip), 6000);
                 socket = new Socket();
                 socket.connect(socketAddress, 300);
 
+                //Connect successfully
                 client = new Client(socket);
+
+                //Send RECONNECT message
                 client.send(new Message(FLAG.RECONNECT,Client.UserToJson(new User(user.getName(),user.getPassword(),group))));
+
+                //Get message from server
                 Message message=client.get();
+
+                //Analyse the message
                 if(message.getFlag()==FLAG.RECONNECT) {
-                    user = JsonToUser(message.getMsg());
-                    port=user.getPort();
-                    socket = new Socket(getResources().getString(R.string.ip), port);
+                    user = JsonToUser(message.getMsg());//Set user
+                    port=user.getPort();//Set port
+                    socket = new Socket(getResources().getString(R.string.ip), port);//Connect private server
                     client = new Client(socket);
+
+
+
+                    //Initialize variables
                     isConnect=true;
                     isAllowThread =true;
+
+                    Message message2=client.get();
+                    handleRecMessage(message2);
+
+
+                    //Get cloud message
+                    Message message1=null;
+                    List<UserMessage> userMessages=null;
+                    do{
+                        try {
+                            client.send(new Message(FLAG.CLOUD_REQUEST, Client.MessageCloudToJson(new Message_Cloud(latestMessageId))));
+                            message1 = client.get();
+                            if(message1.getFlag()==FLAG.CLOUD){
+                                userMessages = JsonToListUserMessage(message1.getMsg());
+                                if(userMessages.size()!=0){
+                                    Database.UserMessagesDatabase.addUserMessagesListToDatabase(userMessages);
+                                    latestMessageId=userMessages.get(userMessages.size()-1).getMessageId();
+                                }
+                                break;
+                            }
+                        }catch(Exception e){e.printStackTrace();}
+                    }while (true);
+                    arrayList.remove(arrayList.size()-1);
+                    setList(userMessages,CLOUD);
+
+                    //Restart recThread
                     new Thread(recThread).start();
+
+                    //Restart HB
                     hbTimer.cancel();
                     hbTimer.start();
+
                     break;
                 }
                 Thread.sleep(1000);
@@ -129,7 +181,8 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         if(!isConnect){
             if(isFront){
                 Looper.prepare();
-                AlertDialog.Builder alert = new AlertDialog.Builder(Main2Activity.this)
+                //Show Dialog
+                AlertDialog.Builder alert = new AlertDialog.Builder(ChatActivity.this)
                         .setTitle("未连接")
                         .setMessage("您已退出，请重新登录")
                         .setCancelable(false)
@@ -138,7 +191,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 Intent intent = new Intent();
                                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                intent.setClass(Main2Activity.this, MainActivity.class);
+                                intent.setClass(ChatActivity.this, LoginActivity.class);
                                 startActivity(intent);
                                 finish();
                             }
@@ -164,6 +217,31 @@ public class Main2Activity extends Activity implements View.OnClickListener {
             try{
                 socket=new Socket(getResources().getString(R.string.ip),user.getPort());
                 client=new Client(socket);
+                Message message2=client.get();
+                handleRecMessage(message2);
+
+
+                //Get cloud message
+                Message message1=null;
+                List<UserMessage> userMessages=null;
+                do{
+                    try {
+                        client.send(new Message(FLAG.CLOUD_REQUEST, Client.MessageCloudToJson(new Message_Cloud(latestMessageId))));
+                        message1 = client.get();
+                        if(message1.getFlag()==FLAG.CLOUD){
+                            userMessages = JsonToListUserMessage(message1.getMsg());
+                            if(userMessages.size()!=0){
+                                Database.UserMessagesDatabase.addUserMessagesListToDatabase(userMessages);
+                                latestMessageId=userMessages.get(userMessages.size()-1).getMessageId();
+                            }
+                            break;
+                        }
+                    }catch(Exception e){e.printStackTrace();}
+                }while (true);
+
+                recThread.start();
+                setList(userMessages,CLOUD);
+
             }catch (Exception e){
                 e.printStackTrace();
             }
@@ -207,7 +285,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                     }while(str==null);
 //                    Log.d(TAG, "str:" + str);
 
-                    UserMessage userMessage=new UserMessage(user.getName(),time,str,user.getGroup());
+                    UserMessage userMessage=new UserMessage(user.getName(),str,user.getGroup(),UserMessage.MSG);
 //                    Log.d(TAG,Client.UserMessageToJson(userMessage));
                     client.send(new Message(FLAG.USER_MESSAGE,Client.UserMessageToJson(userMessage)));
                     runOnUiThread(new Runnable() {
@@ -226,16 +304,19 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     private void handleRecMessage(Message message){
         UserMessage userMessage;
         Message_Connect messageConnect;
-        UserImg userImg;
 
         if(message!=null)
         switch(message.getFlag()){
-            case FLAG.CLOUD:
-                userMessage=JsonToUserMessage(message.getMsg());
-                setList(userMessage);
-                break;
+//            case FLAG.CLOUD:
+//                List<UserMessage> userMessages=JsonToListUserMessage(message.getMsg());
+//                latestMessageId=userMessages.get(userMessages.size()-1).getMessageId();
+//                Database.UserMessagesDatabase.addUserMessagesListToDatabase(userMessages);
+//                setList(userMessages);
+//                break;
             case FLAG.USER_MESSAGE:
                 userMessage=JsonToUserMessage(message.getMsg());
+                latestMessageId=userMessage.getMessageId();
+                Database.UserMessagesDatabase.addUserMessageToDatabase(userMessage);
                 if(!isFront) {
                     if(unreadMsgCount ==1){
                         startNotification(userMessage.getGroup(), userMessage.getUser()+":"+userMessage.getMsg(),1,true,true);
@@ -252,60 +333,42 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 break;
             case FLAG.CONNECT_INFO:
                 messageConnect =JsonToConnectMessage(message.getMsg());
-                setList(messageConnect);
+                if(!messageConnect.getName().equals(user.getName())) {
+                    setList(messageConnect);
+                }
                 break;
             case FLAG.HB:
                 client.send(new Message(FLAG.HB));
                 break;
             case FLAG.USERLIST:
                 //Handle
-                String str=message.getMsg();
-                String str2=str.replaceAll("[\\[\\]\"]","");
-                Log.d(TAG,str2);
-                groupUser=str2.split(", ");
+//                String str=message.getMsg();
+//                String str2=str.replaceAll("[\\[\\]\"]","");
+//                Log.d(TAG,str2);
+//                groupUser=str2.split(",");
+                groupUser=JsonToListStrs(message.getMsg());
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        txv_Group.setText(user.getGroup()+"("+groupUser.length+")");
+                        txv_Group.setText(user.getGroup()+"("+groupUser.size()+")");
                     }
                 });
-                break;
-            case FLAG.USER_IMG:
-                userImg=JsonToUserImg(message.getMsg());
-                if(!isFront) {
-                    if(unreadMsgCount ==1){
-                        startNotification(userImg.getGroup(), userImg.getNickName()+":[动画表情]",1,true,true);
-                    }
-                    else{
-                        startNotification(userImg.getGroup(), "["+ unreadMsgCount +"条]"+userImg.getNickName()+":[动画表情]",1,true,true);
-                    }
-                    unreadMsgCount++;
-                }
-                else{
-                    unreadMsgCount =1;
-                }
-                setList(userImg);
-                break;
-            case FLAG.CLOUD_IMG:
-                userImg=JsonToUserImg(message.getMsg());
-                setList(userImg);
                 break;
         }
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //Unsafe
-        //if (android.os.Build.VERSION.SDK_INT > 9) {
-            //StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            //StrictMode.setThreadPolicy(policy);
-        //}
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+
+        //Get data from loginActivity
+        setContentView(R.layout.activity_chat);
         Intent intent=getIntent();
         isFront=true;
+
         //Get user
         user=Client.JsonToUser(intent.getStringExtra("user"));
         group=user.getGroup();
+
         //Instance
         btn_Exit=(Button)this.findViewById(R.id.btn_exit);
         btn_Send =(Button)this.findViewById(R.id.btn_send);
@@ -313,7 +376,10 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         txv_Group =(TextView)this.findViewById(R.id.txv_group);
         edt=(EditText)this.findViewById(R.id.edt_msg);
         listView=(ListView)this.findViewById(R.id.listview);
+        recThread=new Thread(receiveMsgRunnable);
+        connectThread=new Thread(connectRunnable);
 
+        //Set UI
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -321,39 +387,43 @@ public class Main2Activity extends Activity implements View.OnClickListener {
             }
         });
         txv_Group.setText(user.getGroup());
-        recThread=new Thread(receiveMsgRunnable);
-        connectThread=new Thread(connectRunnable);
 
-        recThread.start();
+        //Set Listview adapter
+        arrayList=new ArrayList<>();
+        adapter=new Adapter(ChatActivity.this,arrayList);
+        listView.setAdapter(adapter);
+
+        sqLiteDatabase=Database.getSqLiteDatabase(ChatActivity.this);
+        List<UserMessage> list=Database.UserMessagesDatabase.getUserMessagesList();
+        if(list.size()!=0){
+            latestMessageId=list.get(list.size()-1).getMessageId();
+        }
+        try {
+            Log.d(TAG, list.get(0).getMsg());
+        }catch (Exception e){
+            e.printStackTrace();
+            Log.d(TAG,"error database");
+        }
+        setList(list,LOCAL);
+
         connectThread.start();
         hbTimer.start();
 
-
-
-        arrayList=new ArrayList<ListItem>();
-        adapter=new Adapter(Main2Activity.this,arrayList);
-//        simpleAdapter=new SimpleAdapter(Main2Activity.this,msgList,R.layout.listview,
-//                new String[]{"user","time","msg","img","emojiimg"},
-//                new int[]{R.id.txv_user,R.id.txv_time,R.id.txv_msg,R.id.img_user,0});
-
-        listView.setAdapter(adapter);
-
+        //Set OnClickListener and TextWatcher
         btn_Send.setOnClickListener(this);
         btn_Exit.setOnClickListener(this);
         txv_Group.setOnClickListener(this);
-
         edt.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
             }
-
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if(edt.getText().toString().equals("/")){
                     final String[] emojis={"GPM","Happy"};
 
-                    AlertDialog.Builder builder=new AlertDialog.Builder(Main2Activity.this)
+                    AlertDialog.Builder builder=new AlertDialog.Builder(ChatActivity.this)
                             .setTitle("发送表情")
                             .setItems(emojis,new DialogInterface.OnClickListener() {
                                 @Override
@@ -365,7 +435,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                                             new Thread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    client.send(new Message(FLAG.USER_IMG,UserImgToJson(new UserImg(user.getName(),R.drawable.gpm,user.getGroup()))));
+                                                    client.send(new Message(FLAG.USER_MESSAGE,UserMessageToJson(new UserMessage(user.getName(),"[GPM的动画表情]",R.drawable.gpm,user.getGroup(),UserMessage.IMG))));
                                                 }
                                             }).start();
                                             break;
@@ -373,7 +443,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                                             new Thread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    client.send(new Message(FLAG.USER_IMG,UserImgToJson(new UserImg(user.getName(),R.drawable.happy,user.getGroup()))));
+                                                    client.send(new Message(FLAG.USER_MESSAGE,UserMessageToJson(new UserMessage(user.getName(),"[动画表情]",R.drawable.happy,user.getGroup(),UserMessage.IMG))));
                                                 }
                                             }).start();
                                     }
@@ -389,13 +459,11 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                     Looper.loop();
                 }
             }
-
             @Override
             public void afterTextChanged(Editable editable) {
 
             }
         });
-
     }
 
     @Override
@@ -404,7 +472,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
             case R.id.btn_send:
 //
 //                if(edt.getText().toString().equals("1")){
-//                    reConnect();
+//                    reconnect();
 //                }
 //                else if(edt.getText().toString().equals("2")){
 //                    new Thread(
@@ -433,30 +501,40 @@ public class Main2Activity extends Activity implements View.OnClickListener {
                 }.start();
                 Intent intent=new Intent();
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.setClass(Main2Activity.this,MainActivity.class);
+                intent.setClass(ChatActivity.this, LoginActivity.class);
                 startActivity(intent);
                 adapter=null;
                 listView=null;
                 finish();
                 break;
             case R.id.txv_group:
-                StringBuilder stringBuilder=new StringBuilder();
-                for(int i=0;i<groupUser.length-1;i++){
-                    stringBuilder.append(groupUser[i]+"\n\r");
-                }
-                stringBuilder.append(groupUser[groupUser.length-1]+"\n\r");
-                String str=stringBuilder.toString();
-
-                AlertDialog.Builder alert=new AlertDialog.Builder(Main2Activity.this)
+                try {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (int i = 0; i < groupUser.size() - 1; i++) {
+                        stringBuilder.append(groupUser.get(i) + "\n");
+                    }
+                    stringBuilder.append(groupUser.get(groupUser.size() - 1));
+                    String str = stringBuilder.toString();
+                    AlertDialog.Builder alert = new AlertDialog.Builder(ChatActivity.this)
 //                        .setTitle("在线用户")
-                        .setMessage(str)
-                        .setCancelable(true)
-                        .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                            }
-                        });
-                alert.show();
+                            .setMessage(str)
+                            .setCancelable(true)
+                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                }
+                            });
+                    alert.show();
+                }catch (Exception e){
+                    AlertDialog.Builder alert = new AlertDialog.Builder(ChatActivity.this)
+                            .setTitle("不要着急哦")
+                            .setCancelable(true)
+                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                }
+                            });
+                }
                 break;
         }
     }
@@ -477,28 +555,27 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         notificationManager.cancelAll();
         unreadMsgCount =1;
         if(!isConnect){
-            reConnect();
+            reconnect();
         }
 
         Log.d(TAG,"START");
     }
 
-    private void reConnect(){
+    private void reconnect(){
         if(!isExit) {
-            Log.d(TAG, "reConnect()");
+            Log.d(TAG, "reconnect()");
             new Thread(reconnectRunnable).start();
         }
     }
 
     public void startNotification(String title,String msg,int id,boolean cancelable,boolean importance){
         Log.d(TAG,"Notification");
-        Intent intent=new Intent(getApplicationContext(),Main2Activity.class);
+        Intent intent=new Intent(getApplicationContext(), ChatActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-        PendingIntent pendingIntent=PendingIntent.getActivity(Main2Activity.this,10,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent=PendingIntent.getActivity(ChatActivity.this,10,intent,PendingIntent.FLAG_UPDATE_CURRENT);
         NotificationManager notificationManager=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         Notification notification;
         if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.O){
-            Log.d(TAG,"Notification8888888888888888888888");
             NotificationChannel notificationChannel = new NotificationChannel("1", "消息提醒", NotificationManager.IMPORTANCE_HIGH);
             notificationChannel.setShowBadge(true);
             notificationManager.createNotificationChannel(notificationChannel);
@@ -521,7 +598,7 @@ public class Main2Activity extends Activity implements View.OnClickListener {
             return;
         }
         else{
-            NotificationCompat.Builder builder=new NotificationCompat.Builder(Main2Activity.this.getApplicationContext())
+            NotificationCompat.Builder builder=new NotificationCompat.Builder(ChatActivity.this.getApplicationContext())
             .setSmallIcon(R.mipmap.ic_launcher)
             .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             .setDefaults(Notification.DEFAULT_ALL)
@@ -550,18 +627,6 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     }
 
     public void setList(UserMessage userMessage){
-//        Map<String,Object> map=new HashMap<String, Object>();
-//        map.put("user",userMessage.getUser());
-//        map.put("time",userMessage.getTime());
-//        map.put("msg",userMessage.getMsg());
-//        if (userMessage.getUser().equals("GPM")) {
-//            map.put("img", R.drawable.gpm_png);
-//        } else if (userMessage.getUser().equals("orangeboy")) {
-//            map.put("img", R.drawable.admin_png);
-//        } else {
-//            map.put("img", R.drawable.user_png);
-//        }
-//        msgList.add(map);
         arrayList.add(new ListItem(userMessage));
         runOnUiThread(
                 new Runnable() {
@@ -575,21 +640,6 @@ public class Main2Activity extends Activity implements View.OnClickListener {
     }
 
     private void setList(Message_Connect messageConnect){
-//        Map<String,Object> map=new HashMap<String, Object>();
-//        map.put("user","系统");
-//        switch(messageConnect.getType()){
-//            case 1:
-//                map.put("time", messageConnect.getName()+"已加入");
-//                break;
-//            case 2:
-//                map.put("time", messageConnect.getName()+"已退出");
-//                break;
-//            case 3:
-//                map.put("time", messageConnect.getName()+"正在重连");
-//                break;
-//        }
-//        msgList.add(map);
-
         arrayList.add(new ListItem(messageConnect));
         runOnUiThread(
                 new Runnable() {
@@ -601,14 +651,61 @@ public class Main2Activity extends Activity implements View.OnClickListener {
         );
     }
 
-    public void setList(UserImg userImg){
-        arrayList.add(new ListItem(userImg));
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                adapter.notifyDataSetChanged();
+    private void setList(final List<UserMessage> list,int flag){
+        Iterator iterator=list.iterator();
+        while(iterator.hasNext()){
+            arrayList.add(new ListItem((UserMessage) iterator.next()));
+        }
+
+        if(list.size()!=0) {
+            switch (flag) {
+                case LOCAL:
+                    arrayList.add(new ListItem("以上为本地信息"));
+                    break;
+                case CLOUD:
+                    arrayList.add(new ListItem("以上为最近信息"));
+                    break;
             }
-        });
+        }
+//        else{
+//            arrayList.add(new ListItem("未获取到信息"));
+//        }
+        runOnUiThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        adapter.notifyDataSetChanged();
+                        listView.setSelectionFromTop(listView.getCount()-1,0);
+
+                    }
+                }
+        );
     }
 
+    public ChatActivity getContext(){
+        return ChatActivity.this;
+    }
+
+//    public void setList(UserImg userImg){
+//        arrayList.add(new ListItem(userImg));
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                adapter.notifyDataSetChanged();
+//            }
+//        });
+//    }
+
+
+    private void showProgressDialog(String str){
+        try {
+            Looper.prepare();
+        }catch (Exception e){}
+        progressDialog=new ProgressDialog(ChatActivity.this);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage(str);
+        progressDialog.show();
+        Looper.loop();
+    }
 }

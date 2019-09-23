@@ -1,9 +1,10 @@
-package com.example.Nowcent;
+package com.orangeboy.Nowcent;
 
 import androidx.core.app.ActivityCompat;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -22,17 +23,16 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 
-import com.google.gson.Gson;
-
-public class MainActivity extends Activity implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class LoginActivity extends Activity implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
     //Variables
     private int versionCode;
     private boolean isAllowThread = true;
     private boolean isAllowToUse=true;
     private boolean isFirstTime = true;
-    private static final String TAG = "MainActivity";//Log
+    private static final String TAG = "LoginActivity";//Log
     //Object
     private Button btn_Login;
+    private Button btn_new;
     private EditText edt_UserName;
     private EditText edt_Password;
     private EditText edt_Group;
@@ -41,6 +41,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
     private Message message;
     private User user;
 
+    private ProgressDialog progressDialog;
+
     Runnable checkIfConnected = new Runnable() {
         @Override
         public void run() {
@@ -48,6 +50,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                 new Thread(checkVersion).start();
             } else {
                 try {
+                    Thread.sleep(400);
                     setBtnEnabled(false);//set button
                     Looper.prepare();
 
@@ -57,6 +60,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                     socket.connect(socketAddress, 300);
                     client = new Client(socket);
                     client.send(new Message(FLAG.LOGIN));
+
+                    progressDialog.dismiss();
                     while (isAllowThread) {
                         Message loginMessage = client.get();
                         //Log.d(TAG, "str:" + str);
@@ -83,7 +88,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                         //Prepare activity
                         Intent intent = new Intent()
                                 //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                                .setClass(MainActivity.this, Main2Activity.class)
+                                .setClass(LoginActivity.this, ChatActivity.class)
                                 .putExtra("user",Client.UserToJson(user));
                         isAllowThread = false;
                         socket.close();
@@ -114,14 +119,17 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                         Looper.loop();
                     }
                 } catch (java.net.SocketTimeoutException e) {
+                    progressDialog.dismiss();
                     showAlert("连接失败", "请稍后再试");
                     setBtnEnabled(true);
                     Looper.loop();
                 } catch (java.net.ConnectException e) {
+                    progressDialog.dismiss();
                     showAlert("连接失败", "请检查你的网络连接");
                     setBtnEnabled(true);
                     Looper.loop();
                 } catch (Exception e) {
+                    progressDialog.dismiss();
                     e.printStackTrace();
                 }
             }
@@ -161,7 +169,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                         if(localVersionCode>=message_version.getMinVersionCode()){
                             Looper.prepare();
                             //Show dialog
-                            new AlertDialog.Builder(MainActivity.this)
+                            new AlertDialog.Builder(LoginActivity.this)
                                     .setTitle("发现了新的版本" + message_version.getVersionName())
                                     .setMessage("更新日志：\r\n" + message_version.getUpdateLog())
                                     .setCancelable(false)
@@ -185,7 +193,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                         else{
                             isAllowToUse=false;
                             Looper.prepare();
-                            new AlertDialog.Builder(MainActivity.this)
+                            new AlertDialog.Builder(LoginActivity.this)
                                     .setTitle("发现了新的版本" + message_version.getVersionName())
                                     .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + message_version.getUpdateLog())
                                     .setCancelable(false)
@@ -217,7 +225,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
 
 
     private void showAlert(String title,String msg){
-        new AlertDialog.Builder(MainActivity.this)
+        new AlertDialog.Builder(LoginActivity.this)
                 .setTitle(title)
                 .setMessage(msg)
                 .setCancelable(false)
@@ -233,9 +241,11 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_login);
+
         //Instance
         btn_Login=(Button)this.findViewById(R.id.btn_Login);
+        btn_new=(Button)this.findViewById(R.id.btn_new);
         edt_UserName=(EditText)this.findViewById(R.id.edt_UserName);
         edt_Password=(EditText)this.findViewById(R.id.edt_Password);
         edt_Group=(EditText)this.findViewById(R.id.edt_Group);
@@ -277,16 +287,19 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
         }
 
         btn_Login.setOnClickListener(this);
+        btn_new.setOnClickListener(this);
     }
+
 
     @Override
     public void onClick(View view){
         switch (view.getId()){
-            case(R.id.btn_Login):
+            case R.id.btn_Login:
                 if(!edt_UserName.getText().toString().trim().isEmpty()){
                     if(!edt_Password.getText().toString().trim().isEmpty()){
                         if(!edt_Group.getText().toString().trim().isEmpty()){
                             new Thread(checkIfConnected).start();
+                            showProgressDialog("正在连接");
                         }
                         else{
                             showAlert("","请输入群组");
@@ -299,6 +312,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                 else{
                     showAlert("","请输入用户名");
                 }
+                break;
+            case R.id.btn_new:
+                Intent intent = new Intent()
+                        //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        .setClass(LoginActivity.this, RegistActivity.class);
+                startActivity(intent);
                 break;
         }
     }
@@ -342,7 +361,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
         PackageManager packageManager=getPackageManager();
         PackageInfo packageInfo=packageManager.getPackageInfo(getPackageName(),0);
         int versionCode=packageInfo.versionCode;
-        Log.d(TAG,"=============================="+versionCode);
+        Log.d(TAG,"Version Code:"+versionCode);
         return versionCode;
     }
 
@@ -350,7 +369,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
         PackageManager packageManager=getPackageManager();
         PackageInfo packageInfo=packageManager.getPackageInfo(getPackageName(),0);
         String versionName=packageInfo.versionName;
-        Log.d(TAG,"=============================="+versionName);
+        Log.d(TAG,"Version Name:"+versionName);
         return versionName;
     }
 
@@ -371,6 +390,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Acti
                 }
             });
         }
+    }
+
+    private void showProgressDialog(String str){
+        progressDialog=new ProgressDialog(LoginActivity.this);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage(str);
+        progressDialog.show();
     }
 
 }

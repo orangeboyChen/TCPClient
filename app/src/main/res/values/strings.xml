@@ -2,5 +2,5 @@
     <string name="app_name">即讯</string>
     <string name="ip">139.155.18.163</string>
     <!--string name="ip">192.168.137.1</string-->
-    <string name="updateLog">*新增：可发送部分表情，快输入\"/\"试试吧！\n*优化：改变了显示风格</string>
+    <string name="updateLog">*新增：注册功能\n*新增：消息可保存在本地，且可随时与云端同步\n*新增：信息已支持加密\n*优化：更改部分UI\n*修复：若干bug</string>
 </resources>

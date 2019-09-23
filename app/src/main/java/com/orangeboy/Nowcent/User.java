@@ -1,4 +1,4 @@
-package com.example.Nowcent;
+package com.orangeboy.Nowcent;
 
 public class User {
     public String name;

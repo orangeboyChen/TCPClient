@@ -1,4 +1,4 @@
-package com.example.Nowcent;
+package com.orangeboy.Nowcent;
 
 import org.junit.Test;
 

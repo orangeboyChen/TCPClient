@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".RegistActivity">
+
+    <TextView
+        android:id="@+id/txv_welcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="56dp"
+        android:layout_marginTop="36dp"
+        android:text="欢迎你！新朋友"
+        android:textSize="36sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/txv_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="请填写以下信息"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="@+id/txv_welcome"
+        app:layout_constraintTop_toBottomOf="@+id/txv_welcome" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/scrollView2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txv_info"
+        app:layout_constraintVertical_bias="0.0">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0">
+
+            <Button
+                android:id="@+id/btn_regist_getCode"
+                android:layout_width="100dp"
+                android:layout_height="40dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/button_new_circle"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:text="获取验证码"
+                app:layout_constraintBottom_toBottomOf="@+id/edt_regist_code"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_email" />
+
+            <Button
+                android:id="@+id/btn_regist"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/button_circle"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:text="注册"
+                app:layout_constraintEnd_toEndOf="@+id/btn_regist_getCode"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_code"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_code" />
+
+            <EditText
+                android:id="@+id/edt_regist_password"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:ems="10"
+                android:hint="密码"
+                android:inputType="textPassword"
+                android:maxLength="16"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_nickname"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_nickname"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_nickname" />
+
+            <EditText
+                android:id="@+id/edt_regist_repassword"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:ems="10"
+                android:hint="确认密码"
+                android:inputType="textPassword"
+                android:maxLength="16"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_password"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_password"
+                app:layout_constraintTop_toBottomOf="@+id/txv_passwordInfo" />
+
+            <EditText
+                android:id="@+id/edt_regist_email"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:ems="10"
+                android:hint="邮箱地址"
+                android:inputType="textEmailAddress"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_repassword"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_repassword"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_repassword" />
+
+            <EditText
+                android:id="@+id/edt_regist_name"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:ems="10"
+                android:hint="姓名（用户名）"
+                android:inputType="textPersonName"
+                android:maxLength="10"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/edt_regist_code"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="4dp"
+                android:ems="10"
+                android:hint="验证码"
+                android:inputType="textPassword"
+                android:maxLength="6"
+                app:layout_constraintEnd_toStartOf="@+id/btn_regist_getCode"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_email"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_email" />
+
+            <EditText
+                android:id="@+id/edt_regist_nickname"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:ems="10"
+                android:hint="昵称"
+                android:inputType="textPersonName"
+                android:maxLength="10"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_name"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_name"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_name" />
+
+            <TextView
+                android:id="@+id/txv_passwordInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="2dp"
+                android:text="密码必须包含一个大写，一个小写字母，一个数字，一个特殊字符，且长度为8到16位"
+                app:layout_constraintEnd_toEndOf="@+id/edt_regist_password"
+                app:layout_constraintStart_toStartOf="@+id/edt_regist_password"
+                app:layout_constraintTop_toBottomOf="@+id/edt_regist_password" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

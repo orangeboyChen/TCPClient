@@ -1,4 +1,4 @@
-package com.example.Nowcent;
+package com.orangeboy.Nowcent;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -81,7 +81,7 @@ public class Adapter extends BaseAdapter {
                     viewHolder3.txv_User=(TextView)view.findViewById(R.id.txv_user);
                     viewHolder3.txv_Time=(TextView)view.findViewById(R.id.txv_time);
                     viewHolder3.image_User=(ImageView)view.findViewById(R.id.img_user);
-                    viewHolder3.image_img=(ImageView)view.findViewById(R.id.imageView);
+                    viewHolder3.image_img=(ImageView)view.findViewById(R.id.img_emoji);
                     view.setTag(viewHolder3);
             }
         }
@@ -118,7 +118,7 @@ public class Adapter extends BaseAdapter {
                 viewHolder1.txv_Msg.setText(list.get(i).getMsg());
                 break;
             case SYSTEM_MESSAGE:
-                viewHolder2.txv_Msg=(TextView)view.findViewById(R.id.SystemTxv);
+                viewHolder2.txv_Msg=(TextView)view.findViewById(R.id.txv_System);
                 viewHolder2.txv_Msg.setText(list.get(i).getMsg());
                 break;
             case USER_IMG:
@@ -173,14 +173,23 @@ class ListItem{
 
 
     public ListItem(UserMessage userMessage){
-        this.type=0;
-        this.name=userMessage.getUser();
+        switch (userMessage.getType()){
+            case UserMessage.MSG:
+                this.type=Adapter.USER_MESSAGE;
+                break;
+            case UserMessage.IMG:
+                this.type=Adapter.USER_IMG;
+                this.imgId=userMessage.getImgId();
+                break;
+        }
+        this.name=userMessage.getNickName();
         this.time=userMessage.getTime();
         this.msg=userMessage.getMsg();
+
     }
 
     public ListItem(Message_Connect message_connect){
-        this.type=1;
+        this.type=Adapter.SYSTEM_MESSAGE;
         switch (message_connect.getType()){
             case FLAG.JOIN:
                 this.msg=message_connect.getName()+"已加入";
@@ -191,13 +200,11 @@ class ListItem{
         }
     }
 
-    public ListItem(UserImg userImg){
-        this.type=2;
-        this.name=userImg.getUser();
-        this.time=userImg.getTime();
-        this.imgId=userImg.getImgId();
-
+    public ListItem(String str){
+        this.type=Adapter.SYSTEM_MESSAGE;
+        this.msg=str;
     }
+
 
     public int getType() {
         return type;

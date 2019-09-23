@@ -4,11 +4,11 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.1"
     defaultConfig {
-        applicationId "com.example.Nowcent"
+        applicationId "com.orangeboy.Nowcent"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 11
-        versionName "2.3.1 DEBUG"
+        versionCode 12
+        versionName "2.4.0 DEBUG"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
