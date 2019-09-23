@@ -47,12 +47,12 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
         @Override
         public void run() {
             if (!isAllowToUse) {
+                progressDialog.dismiss();
                 new Thread(checkVersion).start();
             } else {
                 try {
                     Thread.sleep(400);
                     setBtnEnabled(false);//set button
-                    Looper.prepare();
 
                     //set socket
                     SocketAddress socketAddress = new InetSocketAddress(getResources().getString(R.string.ip), 6000);
@@ -62,6 +62,7 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                     client.send(new Message(FLAG.LOGIN));
 
                     progressDialog.dismiss();
+
                     while (isAllowThread) {
                         Message loginMessage = client.get();
                         //Log.d(TAG, "str:" + str);
@@ -69,7 +70,6 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                             break;
                         } else if (loginMessage.getFlag()==FLAG.REFUSE) {
                             showAlert("你已被禁止登录", "请联系管理员");
-                            Looper.loop();
                             //socket.close();
                             break;
                         }
@@ -95,11 +95,8 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                         startActivity(intent);
                     }
                     else if(checkMessage.getFlag()==FLAG.LOGIN_ERROR){
+                        setBtnEnabled(true);
                         showAlert("密码错误","请重新输入用户名和密码");
-                        //Set Sp
-                        setSp("password",null);
-                        setSp("group",null);
-                        //Clear
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -107,27 +104,27 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                                 edt_Group.setText("");
                             }
                         });
+                        //Set Sp
+                        setSp("password",null);
+                        setSp("group",null);
+
                     }
                     else if(checkMessage.getFlag()==FLAG.LOGIN_USING){
-                        showAlert("有人正在登录你的账号","如果这的确是你的账号，请稍后再登录");
                         setBtnEnabled(true);
-                        Looper.loop();
+                        showAlert("有人正在登录你的账号","如果这的确是你的账号，请稍后再登录");
                     }
                     else {
-                        showAlert("连接失败", "服务器返回了错误的数据");
                         setBtnEnabled(true);
-                        Looper.loop();
+                        showAlert("连接失败", "服务器返回了错误的数据");
                     }
                 } catch (java.net.SocketTimeoutException e) {
                     progressDialog.dismiss();
-                    showAlert("连接失败", "请稍后再试");
                     setBtnEnabled(true);
-                    Looper.loop();
+                    showAlert("连接失败", "请稍后再试");
                 } catch (java.net.ConnectException e) {
                     progressDialog.dismiss();
-                    showAlert("连接失败", "请检查你的网络连接");
                     setBtnEnabled(true);
-                    Looper.loop();
+                    showAlert("连接失败", "请检查你的网络连接");
                 } catch (Exception e) {
                     progressDialog.dismiss();
                     e.printStackTrace();
@@ -167,46 +164,53 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                     }
                     else{
                         if(localVersionCode>=message_version.getMinVersionCode()){
-                            Looper.prepare();
                             //Show dialog
-                            new AlertDialog.Builder(LoginActivity.this)
-                                    .setTitle("发现了新的版本" + message_version.getVersionName())
-                                    .setMessage("更新日志：\r\n" + message_version.getUpdateLog())
-                                    .setCancelable(false)
-                                    .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                        }
-                                    })
-                                    .setNegativeButton("下载该版本", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            Uri uri = Uri.parse(message_version.getUpdateURL());
-                                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                            startActivity(intent);
-                                        }
-                                    })
-                                    .create().show();
-                            Looper.loop();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    new AlertDialog.Builder(LoginActivity.this)
+                                            .setTitle("发现了新的版本" + message_version.getVersionName())
+                                            .setMessage("更新日志：\r\n" + message_version.getUpdateLog())
+                                            .setCancelable(false)
+                                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                }
+                                            })
+                                            .setNegativeButton("下载该版本", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    Uri uri = Uri.parse(message_version.getUpdateURL());
+                                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                                    startActivity(intent);
+                                                }
+                                            })
+                                            .create().show();
+                                }
+                            });
                             break;
                         }
                         else{
                             isAllowToUse=false;
-                            Looper.prepare();
-                            new AlertDialog.Builder(LoginActivity.this)
-                                    .setTitle("发现了新的版本" + message_version.getVersionName())
-                                    .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + message_version.getUpdateLog())
-                                    .setCancelable(false)
-                                    .setPositiveButton("好", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            Uri uri = Uri.parse(message_version.getUpdateURL());
-                                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                            startActivity(intent);
-                                        }
-                                    })
-                                    .create().show();
-                            Looper.loop();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    new AlertDialog.Builder(LoginActivity.this)
+                                            .setTitle("发现了新的版本" + message_version.getVersionName())
+                                            .setMessage("您当前的版本过旧，若拒绝更新将无法继续使用！\r\n更新日志：\r\n" + message_version.getUpdateLog())
+                                            .setCancelable(false)
+                                            .setPositiveButton("好", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    Uri uri = Uri.parse(message_version.getUpdateURL());
+                                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                                    startActivity(intent);
+                                                }
+                                            })
+                                            .create().show();
+                                }
+                            });
+
                             break;
                         }
                     }
@@ -225,7 +229,10 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
 
 
     private void showAlert(String title,String msg){
-        new AlertDialog.Builder(LoginActivity.this)
+//        try{
+//            Looper.prepare();
+//        }catch (Exception e){}
+        final AlertDialog.Builder builder= new AlertDialog.Builder(LoginActivity.this)
                 .setTitle(title)
                 .setMessage(msg)
                 .setCancelable(false)
@@ -234,8 +241,14 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                     public void onClick(DialogInterface dialogInterface, int i) {
 
                     }
-                })
-                .create().show();
+                });
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                builder.create();
+                builder.show();
+            }
+        });
     }
 
     @Override
@@ -265,7 +278,6 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
             e.printStackTrace();
         }
         if(isFirstTime){
-
             showAlert("欢迎加入！","请及时反馈bug，谢谢！");
             isFirstTime =false;
             setSp("isFirstTime",false);
@@ -298,8 +310,8 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                 if(!edt_UserName.getText().toString().trim().isEmpty()){
                     if(!edt_Password.getText().toString().trim().isEmpty()){
                         if(!edt_Group.getText().toString().trim().isEmpty()){
-                            new Thread(checkIfConnected).start();
                             showProgressDialog("正在连接");
+                            new Thread(checkIfConnected).start();
                         }
                         else{
                             showAlert("","请输入群组");
