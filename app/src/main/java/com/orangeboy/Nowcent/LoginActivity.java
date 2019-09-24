@@ -142,13 +142,7 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
                     Socket socket = new Socket(getResources().getString(R.string.ip), 6002);
                     Client client = new Client(socket);
 
-                    String updateLog;
-                    final String updateURL;
-                    int newVersionCode;
-                    int minVersionCode;
-                    final String versionName;
                     int localVersionCode= getLocalVersionCode();
-
 
                     client.send(new Message(FLAG.VERSION));
                     message=client.get();
@@ -257,11 +251,11 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
         setContentView(R.layout.activity_login);
 
         //Instance
-        btn_Login=(Button)this.findViewById(R.id.btn_Login);
-        btn_new=(Button)this.findViewById(R.id.btn_new);
-        edt_UserName=(EditText)this.findViewById(R.id.edt_UserName);
-        edt_Password=(EditText)this.findViewById(R.id.edt_Password);
-        edt_Group=(EditText)this.findViewById(R.id.edt_Group);
+        btn_Login=this.findViewById(R.id.btn_Login);
+        btn_new=this.findViewById(R.id.btn_new);
+        edt_UserName=this.findViewById(R.id.edt_UserName);
+        edt_Password=this.findViewById(R.id.edt_Password);
+        edt_Group=this.findViewById(R.id.edt_Group);
 
         //getSpInfo
         isFirstTime =getSpBool("isFirstTime");
@@ -338,21 +332,21 @@ public class LoginActivity extends Activity implements View.OnClickListener, Act
         SharedPreferences sharedPreferences=getSharedPreferences("Settings", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor=sharedPreferences.edit();
         editor.putString(index,str);
-        editor.commit();
+        editor.apply();
     }
 
     private void setSp(String index,boolean bool){
         SharedPreferences sharedPreferences=getSharedPreferences("Settings", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor=sharedPreferences.edit();
         editor.putBoolean(index,bool);
-        editor.commit();
+        editor.apply();
     }
 
     private void setSp(String index,int i){
         SharedPreferences sharedPreferences=getSharedPreferences("Settings", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor=sharedPreferences.edit();
         editor.putInt(index,i);
-        editor.commit();
+        editor.apply();
     }
 
     private String getSpStr(String index){

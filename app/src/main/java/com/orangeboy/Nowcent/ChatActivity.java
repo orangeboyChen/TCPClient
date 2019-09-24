@@ -158,7 +158,9 @@ public class ChatActivity extends Activity implements View.OnClickListener {
                             }
                         }catch(Exception e){e.printStackTrace();}
                     }while (true);
-                    arrayList.remove(arrayList.size()-1);
+                    if(isFront) {
+                        arrayList.remove(arrayList.size() - 1);
+                    }
                     setList(userMessages,CLOUD);
 
                     //Restart recThread

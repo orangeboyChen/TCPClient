@@ -20,21 +20,18 @@ import java.net.SocketAddress;
 
 
 public class RegistActivity extends AppCompatActivity implements View.OnClickListener {
-    int flag;
+    private int flag;
 
-    Socket socket;
-    Client client;
-
-    TextView txv_PasswordInfo;
-    EditText edt_Name;
-    EditText edt_Nickname;
-    EditText edt_Password;
-    EditText edt_rePassword;
-    EditText edt_Email;
-    EditText edt_Code;
-    Button btn_GetCode;
-    Button btn_Regist;
-    ProgressDialog progressDialog;
+    private TextView txv_PasswordInfo;
+    private EditText edt_Name;
+    private EditText edt_Nickname;
+    private EditText edt_Password;
+    private EditText edt_rePassword;
+    private EditText edt_Email;
+    private EditText edt_Code;
+    private Button btn_GetCode;
+    private Button btn_Regist;
+    private ProgressDialog progressDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -199,12 +196,12 @@ public class RegistActivity extends AppCompatActivity implements View.OnClickLis
         public void run() {
             try {
                 SocketAddress socketAddress = new InetSocketAddress(getResources().getString(R.string.ip), 6003);
-                socket = new Socket();
+                Socket socket = new Socket();
                 socket.connect(socketAddress, 300);
 
                 Thread.sleep(400);
                 progressDialog.dismiss();
-                client=new Client(socket);
+                Client client=new Client(socket);
                 client.send(new Message(flag,Client.MessageRegistToJson(new Message_Regist(edt_Name.getText().toString(),edt_Nickname.getText().toString(),edt_Password.getText().toString(),edt_Email.getText().toString(),edt_Code.getText().toString()))));
                 Message message=client.get();
                 runOnUiThread(new Runnable() {
@@ -257,7 +254,9 @@ public class RegistActivity extends AppCompatActivity implements View.OnClickLis
     private void showAlert(String title,String msg){
         try {
             Looper.prepare();
-        }catch (Exception e){}
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         new AlertDialog.Builder(RegistActivity.this)
                 .setTitle(title)
                 .setMessage(msg)
