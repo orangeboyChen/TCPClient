@@ -10,6 +10,7 @@ android {
         versionCode 12
         versionName "2.4.1 DEBUG"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
     }
     buildTypes {
         release {
